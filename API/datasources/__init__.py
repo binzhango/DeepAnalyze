@@ -32,6 +32,12 @@ from .azure_blob import (
     AzureBlobConnector,
 )
 
+# PostgreSQL connector is imported conditionally to avoid dependency issues
+try:
+    from .postgresql import PostgreSQLConnector
+except ImportError:
+    PostgreSQLConnector = None
+
 __all__ = [
     "DataSourceType",
     "DataSourceConfig",
@@ -51,4 +57,5 @@ __all__ = [
     "PooledConnection",
     "PoolError",
     "AzureBlobConnector",
+    "PostgreSQLConnector",
 ]
