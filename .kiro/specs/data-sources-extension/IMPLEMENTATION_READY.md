@@ -116,10 +116,10 @@ class DataItem:
 - [x] Implement credential manager
 - [x] Create data source registry
 - [x] Add connection pooling
-- [ ] Write unit tests
+- [x] Write unit tests ✅ **87 tests passing**
 
 ### Phase 2: Azure Blob Connector (Week 2)
-- [ ] Implement Azure Blob connector
+- [x] Implement Azure Blob connector
 - [ ] Add authentication (connection string, SAS token)
 - [ ] Implement list/download operations
 - [ ] Add metadata retrieval
