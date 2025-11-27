@@ -31,6 +31,24 @@ Central registry for managing data source connectors and their lifecycle.
 - Thread-safe operations
 - Credential encryption/decryption
 
+### 4. Connection Pooling (`pool.py`)
+Provides efficient connection pooling and resource management for data sources.
+
+**Key Classes:**
+- `ConnectionPool`: Manages connections for a single data source
+- `ConnectionPoolManager`: Manages pools for multiple data sources
+- `PoolConfig`: Configuration for connection pools
+- `PooledConnection`: Wrapper for pooled connections
+
+**Key Features:**
+- Connection reuse across requests
+- Concurrent connection limiting
+- Automatic cleanup of idle/expired connections
+- Health checking
+- Pool statistics and monitoring
+
+See [POOLING.md](./POOLING.md) for detailed documentation.
+
 ## Usage Examples
 
 ### Basic Setup
@@ -258,10 +276,44 @@ pytest API/datasources/test_registry.py -v
 └─────────────────────────────────────────┘
 ```
 
+## Connection Pooling
+
+Connection pooling is now available for efficient resource management. See [POOLING.md](./POOLING.md) for complete documentation.
+
+**Quick Example:**
+
+```python
+from API.datasources import ConnectionPoolManager, PoolConfig
+
+# Create pool manager
+manager = ConnectionPoolManager(
+    default_config=PoolConfig(max_size=10, min_size=2)
+)
+
+# Get pool for a data source
+pool = await manager.get_pool(
+    data_source_id="my-database",
+    connector_factory=lambda: MyConnector(config)
+)
+
+# Acquire connection
+connector = await pool.acquire()
+try:
+    # Use connector
+    data = await connector.fetch_data("query", "/workspace")
+finally:
+    # Always release
+    await pool.release(connector)
+
+# Get statistics
+stats = manager.get_pool_stats("my-database")
+print(f"Pool: {stats['in_use']}/{stats['total']} connections in use")
+```
+
 ## Next Steps
 
 1. Implement Azure Blob Storage connector (`azure_blob.py`)
-2. Implement PostgreSQL connector (`postgresql.py`)
+2. Implement PostgreSQL connector (`postgresql.py`) with connection pooling
 3. Create API endpoints for data source management
 4. Integrate with chat API for automatic data fetching
-5. Add connection pooling for database connectors
+5. Integrate connection pooling with registry
