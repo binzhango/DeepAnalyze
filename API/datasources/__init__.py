@@ -17,6 +17,10 @@ from .credentials import (
     CredentialManager,
     CredentialError,
 )
+from .registry import (
+    DataSourceRegistry,
+    RegistryError,
+)
 
 __all__ = [
     "DataSourceType",
@@ -29,4 +33,6 @@ __all__ = [
     "DataFetchError",
     "CredentialManager",
     "CredentialError",
+    "DataSourceRegistry",
+    "RegistryError",
 ]
