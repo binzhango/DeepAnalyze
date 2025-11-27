@@ -226,15 +226,47 @@ registry.register_connector_class(DataSourceType.CUSTOM, MyCustomConnector)
 
 ## Testing
 
-Run all tests:
+### Unit Tests
+
+Unit tests use mocks to test individual components in isolation.
+
+Run all unit tests:
 ```bash
-pytest API/datasources/ -v
+pytest API/datasources/ -v -k "not integration"
 ```
 
 Run specific test file:
 ```bash
 pytest API/datasources/test_registry.py -v
+pytest API/datasources/test_azure_blob.py -v
 ```
+
+### Integration Tests
+
+Integration tests validate connectors against real services (Azure Blob Storage or Azurite emulator).
+
+**Quick Start:**
+```bash
+# Automatic setup and run
+./API/datasources/run_integration_tests.sh --auto-start
+
+# Or manually start Azurite first
+docker run -p 10000:10000 mcr.microsoft.com/azure-storage/azurite azurite-blob --blobHost 0.0.0.0
+
+# Then run tests
+pytest API/datasources/test_azure_blob_integration.py -v
+```
+
+**See [INTEGRATION_TESTS.md](./INTEGRATION_TESTS.md) for complete documentation.**
+
+### Test Coverage
+
+Current test coverage:
+- **Base connector**: 87 unit tests passing ✅
+- **Credential manager**: Full coverage ✅
+- **Registry**: Full coverage ✅
+- **Connection pooling**: Full coverage ✅
+- **Azure Blob connector**: Unit tests ✅ + Integration tests ✅
 
 ## Architecture
 
