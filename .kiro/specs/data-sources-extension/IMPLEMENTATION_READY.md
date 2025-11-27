@@ -115,7 +115,7 @@ class DataItem:
 - [x] Create base connector interface
 - [x] Implement credential manager
 - [x] Create data source registry
-- [ ] Add connection pooling
+- [x] Add connection pooling
 - [ ] Write unit tests
 
 ### Phase 2: Azure Blob Connector (Week 2)
