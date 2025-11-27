@@ -1,0 +1,26 @@
+[
+  {
+    "messages": [
+      {
+        "role": "user",
+        "content": "# Instruction\nConnect to Azure Blob Storage container 'sales-data' and analyze the CSV files.\n\n# Data\nAzure Blob: container=sales-data, account=myaccount"
+      },
+      {
+        "role": "assistant",
+        "content": "<Analyze>\nI need to connect to Azure Blob Storage and list the available CSV files in the sales-data container.\n</Analyze>\n\n<Code>\n```python\nfrom azure.storage.blob import BlobServiceClient\nimport pandas as pd\nimport os\n\n# Connect to Azure Blob Storage\nconnection_string = os.environ['AZURE_STORAGE_CONNECTION_STRING']\nblob_service_client = BlobServiceClient.from_connection_string(connection_string)\n\n# List blobs in container\ncontainer_client = blob_service_client.get_container_client('sales-data')\nblobs = container_client.list_blobs()\n\nprint(\"Files in sales-data container:\")\nfor blob in blobs:\n    if blob.name.endswith('.csv'):\n        print(f\"  - {blob.name} ({blob.size} bytes)\")\n```\n</Code>"
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "user",
+        "content": "# Instruction\nQuery PostgreSQL database to get sales by region and create a visualization.\n\n# Data\nPostgreSQL: host=localhost, database=sales_db, table=transactions"
+      },
+      {
+        "role": "assistant",
+        "content": "<Analyze>\nI need to connect to PostgreSQL, query the transactions table, and create a visualization of sales by region.\n</Analyze>\n\n<Code>\n```python\nimport psycopg2\nimport pandas as pd\nimport matplotlib.pyplot as plt\n\n# Connect to PostgreSQL\nconn = psycopg2.connect(\n    host='localhost',\n    database='sales_db',\n    user=os.environ['POSTGRES_USER'],\n    password=os.environ['POSTGRES_PASSWORD']\n)\n\n# Query data\nquery = \"SELECT region, SUM(amount) as total_sales FROM transactions GROUP BY region ORDER BY total_sales DESC\"\ndf = pd.read_sql(query, conn)\nconn.close()\n\nprint(\"Sales by Region:\")\nprint(df)\n\n# Create visualization\nplt.figure(figsize=(10, 6))\nplt.bar(df['region'], df['total_sales'])\nplt.title('Sales by Region')\nplt.xlabel('Region')\nplt.ylabel('Total Sales ($)')\nplt.xticks(rotation=45)\nplt.tight_layout()\nplt.savefig('sales_by_region.png')\nprint(\"\\nVisualization saved as sales_by_region.png\")\n```\n</Code>"
+      }
+    ]
+  }
+]
