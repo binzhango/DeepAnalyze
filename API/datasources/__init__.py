@@ -21,6 +21,13 @@ from .registry import (
     DataSourceRegistry,
     RegistryError,
 )
+from .pool import (
+    ConnectionPool,
+    ConnectionPoolManager,
+    PoolConfig,
+    PooledConnection,
+    PoolError,
+)
 
 __all__ = [
     "DataSourceType",
@@ -35,4 +42,9 @@ __all__ = [
     "CredentialError",
     "DataSourceRegistry",
     "RegistryError",
+    "ConnectionPool",
+    "ConnectionPoolManager",
+    "PoolConfig",
+    "PooledConnection",
+    "PoolError",
 ]
