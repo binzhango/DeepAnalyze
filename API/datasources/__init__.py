@@ -28,6 +28,9 @@ from .pool import (
     PooledConnection,
     PoolError,
 )
+from .azure_blob import (
+    AzureBlobConnector,
+)
 
 __all__ = [
     "DataSourceType",
@@ -47,4 +50,5 @@ __all__ = [
     "PoolConfig",
     "PooledConnection",
     "PoolError",
+    "AzureBlobConnector",
 ]
