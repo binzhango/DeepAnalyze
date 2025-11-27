@@ -1,246 +1,267 @@
-# Data Source Connectors
+# Data Sources Module
 
-This module provides a plugin-based architecture for integrating external data sources with DeepAnalyze.
+This module provides a plugin-based architecture for integrating external data sources with the DeepAnalyze API.
 
-## Overview
+## Components
 
-The data source connector system allows DeepAnalyze to fetch data from various external sources like Azure Blob Storage, PostgreSQL databases, and more. The architecture is designed to be extensible, secure, and performant.
+### 1. Base Connector (`base.py`)
+Defines the abstract interface that all data source connectors must implement.
 
-## Architecture
+**Key Classes:**
+- `DataSourceConnector`: Abstract base class for all connectors
+- `DataSourceConfig`: Configuration for a data source
+- `DataItem`: Represents an item in a data source
+- `DataSourceType`: Enum of supported data source types
 
-```
-DataSourceConnector (Abstract Base Class)
-    ├── AzureBlobConnector (Azure Blob Storage)
-    ├── PostgreSQLConnector (PostgreSQL Database)
-    └── LocalFileConnector (Local File System)
-```
+### 2. Credential Manager (`credentials.py`)
+Handles secure encryption and decryption of sensitive credentials.
 
-## Core Components
+**Key Features:**
+- Fernet symmetric encryption
+- Automatic key generation or environment variable loading
+- Credential sanitization for safe logging
 
-### 1. DataSourceType
+### 3. Data Source Registry (`registry.py`)
+Central registry for managing data source connectors and their lifecycle.
 
-Enumeration of supported data source types:
+**Key Features:**
+- Connector factory pattern
+- Connection lifecycle management
+- Metadata caching
+- Thread-safe operations
+- Credential encryption/decryption
 
-```python
-class DataSourceType(Enum):
-    AZURE_BLOB = "azure_blob"
-    POSTGRESQL = "postgresql"
-    LOCAL_FILE = "local_file"
-```
+## Usage Examples
 
-### 2. DataSourceConfig
-
-Configuration for a data source connection:
-
-```python
-@dataclass
-class DataSourceConfig:
-    id: str                      # Unique identifier
-    type: DataSourceType         # Type of data source
-    name: str                    # Human-readable name
-    config: Dict[str, Any]       # Type-specific configuration
-    created_at: int              # Unix timestamp
-    metadata: Dict[str, Any]     # Additional metadata
-```
-
-**Example:**
+### Basic Setup
 
 ```python
+from API.datasources import (
+    DataSourceRegistry,
+    DataSourceConfig,
+    DataSourceType,
+    CredentialManager
+)
+
+# Initialize credential manager
+credential_manager = CredentialManager()
+
+# Create registry
+registry = DataSourceRegistry(credential_manager=credential_manager)
+
+# Register a connector class (e.g., Azure Blob)
+from API.datasources.azure_blob import AzureBlobConnector
+registry.register_connector_class(DataSourceType.AZURE_BLOB, AzureBlobConnector)
+```
+
+### Register a Data Source
+
+```python
+# Create configuration
 config = DataSourceConfig(
-    id="ds-azure-prod",
+    id="my-azure-storage",
     type=DataSourceType.AZURE_BLOB,
     name="Production Azure Storage",
     config={
         "connection_string": "DefaultEndpointsProtocol=https;...",
-        "container_name": "data"
+        "container": "data-files"
     },
-    metadata={"region": "us-east-1", "environment": "production"}
-)
-```
-
-### 3. DataItem
-
-Represents an item in a data source (file, table, etc.):
-
-```python
-@dataclass
-class DataItem:
-    name: str                    # Name of the item
-    path: str                    # Full path or identifier
-    size: int                    # Size in bytes
-    modified_at: int             # Unix timestamp
-    metadata: Dict[str, Any]     # Additional metadata
-```
-
-**Example:**
-
-```python
-item = DataItem(
-    name="sales_data.csv",
-    path="/data/2024/sales_data.csv",
-    size=1048576,  # 1 MB
-    modified_at=1234567890,
-    metadata={"content_type": "text/csv", "encoding": "utf-8"}
-)
-```
-
-### 4. DataSourceConnector
-
-Abstract base class that all connectors must implement:
-
-```python
-class DataSourceConnector(ABC):
-    async def connect(self) -> bool
-    async def disconnect(self) -> None
-    async def test_connection(self) -> bool
-    async def list_items(self, path: Optional[str] = None) -> List[DataItem]
-    async def fetch_data(self, identifier: str, workspace: str) -> str
-    async def get_metadata(self, identifier: str) -> Dict[str, Any]
-```
-
-## Exception Hierarchy
-
-```
-DataSourceError (Base Exception)
-    ├── ConnectionError (Connection failures)
-    ├── AuthenticationError (Authentication failures)
-    └── DataFetchError (Data fetching failures)
-```
-
-## Implementing a New Connector
-
-To implement a new data source connector:
-
-1. **Create a new file** in `API/datasources/` (e.g., `my_connector.py`)
-
-2. **Import the base class:**
-
-```python
-from .base import DataSourceConnector, DataSourceConfig, DataItem
-```
-
-3. **Implement all abstract methods:**
-
-```python
-class MyConnector(DataSourceConnector):
-    async def connect(self) -> bool:
-        # Establish connection
-        # Set self._connection
-        return True
-    
-    async def disconnect(self) -> None:
-        # Close connection
-        # Set self._connection = None
-        pass
-    
-    async def test_connection(self) -> bool:
-        # Verify connection is valid
-        return self._connection is not None
-    
-    async def list_items(self, path: Optional[str] = None) -> List[DataItem]:
-        # List available items
-        return []
-    
-    async def fetch_data(self, identifier: str, workspace: str) -> str:
-        # Fetch data and save to workspace
-        return "/path/to/saved/file"
-    
-    async def get_metadata(self, identifier: str) -> Dict[str, Any]:
-        # Get metadata for item
-        return {}
-```
-
-4. **Register the connector** in the registry (to be implemented)
-
-## Usage Examples
-
-### Basic Usage
-
-```python
-from datasources import DataSourceConfig, DataSourceType
-from datasources.azure_blob import AzureBlobConnector
-
-# Create configuration
-config = DataSourceConfig(
-    id="ds-123",
-    type=DataSourceType.AZURE_BLOB,
-    name="My Azure Storage",
-    config={"connection_string": "..."}
+    metadata={
+        "environment": "production",
+        "owner": "data-team"
+    }
 )
 
-# Create connector
-connector = AzureBlobConnector(config)
+# Register with connection test
+await registry.register_data_source(config, test_connection=True)
+```
 
-# Connect
-await connector.connect()
+### Use a Data Source
 
-# List items
+```python
+# Get a connector
+connector = await registry.get_connector("my-azure-storage")
+
+# List available items
 items = await connector.list_items()
 for item in items:
     print(f"{item.name}: {item.size} bytes")
 
-# Fetch data
-local_path = await connector.fetch_data("data.csv", "/workspace")
-print(f"Data saved to: {local_path}")
-
-# Disconnect
-await connector.disconnect()
+# Fetch data to workspace
+local_path = await connector.fetch_data(
+    identifier="data/sales.csv",
+    workspace="/tmp/workspace"
+)
+print(f"Downloaded to: {local_path}")
 ```
 
-### Using Context Manager
+### Manage Data Sources
 
 ```python
-async with AzureBlobConnector(config) as connector:
-    items = await connector.list_items()
-    for item in items:
-        path = await connector.fetch_data(item.path, "/workspace")
-        print(f"Downloaded: {path}")
-# Connection automatically closed
+# List all data sources (sanitized)
+data_sources = registry.list_data_sources()
+for ds in data_sources:
+    print(f"{ds.name} ({ds.type.value})")
+
+# Get configuration (sanitized)
+config = registry.get_config("my-azure-storage", sanitize=True)
+print(config.config)  # Sensitive fields are redacted
+
+# Test connection
+is_connected = await registry.test_connection("my-azure-storage")
+print(f"Connection status: {is_connected}")
+
+# Unregister data source
+await registry.unregister_data_source("my-azure-storage")
 ```
 
-### Error Handling
+### Metadata Caching
 
 ```python
-from datasources import ConnectionError, AuthenticationError, DataFetchError
+# Cache metadata
+metadata = {"tables": ["users", "orders", "products"]}
+registry.cache_metadata("my-database", metadata)
 
-try:
-    async with connector:
-        await connector.fetch_data("file.csv", "/workspace")
-except AuthenticationError as e:
-    print(f"Authentication failed: {e}")
-except ConnectionError as e:
-    print(f"Connection failed: {e}")
-except DataFetchError as e:
-    print(f"Failed to fetch data: {e}")
+# Retrieve cached metadata
+cached = registry.get_cached_metadata("my-database")
+if cached:
+    print("Using cached metadata")
+else:
+    print("Cache expired or not found")
+
+# Clear cache
+registry.clear_cache("my-database")  # Clear specific
+registry.clear_cache()  # Clear all
 ```
+
+### Cleanup
+
+```python
+# Disconnect all connectors (e.g., during shutdown)
+await registry.disconnect_all()
+```
+
+## Implementing a Custom Connector
+
+To add support for a new data source type:
+
+1. Create a new connector class that inherits from `DataSourceConnector`
+2. Implement all abstract methods
+3. Register the connector class with the registry
+
+```python
+from API.datasources import DataSourceConnector, DataSourceConfig, DataItem
+from typing import List, Dict, Any, Optional
+
+class MyCustomConnector(DataSourceConnector):
+    async def connect(self) -> bool:
+        # Establish connection
+        self._connection = create_connection(self.config.config)
+        return True
+    
+    async def disconnect(self) -> None:
+        # Close connection
+        if self._connection:
+            self._connection.close()
+            self._connection = None
+    
+    async def test_connection(self) -> bool:
+        # Test if connection works
+        try:
+            await self.connect()
+            # Perform simple test operation
+            return True
+        except Exception:
+            return False
+        finally:
+            await self.disconnect()
+    
+    async def list_items(self, path: Optional[str] = None) -> List[DataItem]:
+        # List available items
+        items = []
+        # ... implementation
+        return items
+    
+    async def fetch_data(self, identifier: str, workspace: str) -> str:
+        # Fetch data and save to workspace
+        local_path = os.path.join(workspace, "data.csv")
+        # ... implementation
+        return local_path
+    
+    async def get_metadata(self, identifier: str) -> Dict[str, Any]:
+        # Get metadata for item
+        metadata = {}
+        # ... implementation
+        return metadata
+
+# Register the connector
+registry.register_connector_class(DataSourceType.CUSTOM, MyCustomConnector)
+```
+
+## Security Considerations
+
+1. **Credential Encryption**: All credentials are encrypted at rest using Fernet symmetric encryption
+2. **Sanitization**: Use `sanitize=True` when returning configs to clients to prevent credential exposure
+3. **Logging**: Credentials are never logged; use the credential manager's sanitization features
+4. **Environment Variables**: Store encryption keys in environment variables, not in code
+5. **Connection Pooling**: The registry manages connection lifecycle to prevent resource leaks
 
 ## Testing
 
-Run the test suite:
-
+Run all tests:
 ```bash
-python API/datasources/test_base.py
+pytest API/datasources/ -v
 ```
 
-## Design Principles
+Run specific test file:
+```bash
+pytest API/datasources/test_registry.py -v
+```
 
-1. **Extensibility**: Easy to add new data source types
-2. **Async/Await**: Non-blocking I/O for better performance
-3. **Type Safety**: Strong typing with dataclasses and type hints
-4. **Error Handling**: Clear exception hierarchy
-5. **Context Managers**: Automatic resource cleanup
-6. **Testability**: Abstract interface allows easy mocking
+## Architecture
+
+```
+┌─────────────────────────────────────────┐
+│      Application / API Layer            │
+└──────────────┬──────────────────────────┘
+               │
+               ▼
+┌─────────────────────────────────────────┐
+│      Data Source Registry               │
+│  - Connector Management                 │
+│  - Lifecycle Control                    │
+│  - Metadata Caching                     │
+└──────────────┬──────────────────────────┘
+               │
+               ▼
+┌─────────────────────────────────────────┐
+│      Credential Manager                 │
+│  - Encryption/Decryption                │
+│  - Sanitization                         │
+└─────────────────────────────────────────┘
+               │
+               ▼
+┌─────────────────────────────────────────┐
+│      Data Source Connectors             │
+│  ┌──────────┐  ┌──────────┐            │
+│  │  Azure   │  │PostgreSQL│            │
+│  │  Blob    │  │          │            │
+│  └──────────┘  └──────────┘            │
+└─────────────────────────────────────────┘
+               │
+               ▼
+┌─────────────────────────────────────────┐
+│      External Data Sources              │
+│  - Azure Blob Storage                   │
+│  - PostgreSQL Databases                 │
+│  - Other Sources                        │
+└─────────────────────────────────────────┘
+```
 
 ## Next Steps
 
-- [ ] Implement Azure Blob Storage connector
-- [ ] Implement PostgreSQL connector
-- [ ] Implement credential manager
-- [ ] Implement data source registry
-- [ ] Add connection pooling
-- [ ] Create API endpoints for data source management
-
-## References
-
-- Design Document: `.kiro/specs/data-sources-extension/design.md`
-- Requirements: `.kiro/specs/data-sources-extension/requirements.md`
+1. Implement Azure Blob Storage connector (`azure_blob.py`)
+2. Implement PostgreSQL connector (`postgresql.py`)
+3. Create API endpoints for data source management
+4. Integrate with chat API for automatic data fetching
+5. Add connection pooling for database connectors
