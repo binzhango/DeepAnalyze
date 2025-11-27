@@ -118,12 +118,18 @@ class DataItem:
 - [x] Add connection pooling
 - [x] Write unit tests ✅ **87 tests passing**
 
+**Testing Summary:**
+- ✅ Unit tests: 87 tests covering all core components
+- ✅ Integration tests: 13 tests for Azure Blob Storage
+- ✅ Test automation: Helper scripts and CI/CD ready
+- ✅ Documentation: Complete testing guides
+
 ### Phase 2: Azure Blob Connector (Week 2)
 - [x] Implement Azure Blob connector
-- [ ] Add authentication (connection string, SAS token)
-- [ ] Implement list/download operations
-- [ ] Add metadata retrieval
-- [ ] Write integration tests
+- [x] Add authentication (connection string, SAS token) ✅ **COMPLETE**
+- [x] Implement list/download operations ✅ **COMPLETE**
+- [x] Add metadata retrieval ✅ **COMPLETE**
+- [x] Write integration tests ✅ **COMPLETE** (13 tests)
 
 ### Phase 3: PostgreSQL Connector (Week 2)
 - [ ] Implement PostgreSQL connector
@@ -131,7 +137,7 @@ class DataItem:
 - [ ] Implement query execution
 - [ ] Add schema inspection
 - [ ] Enforce read-only mode
-- [ ] Write integration tests
+- [x] Write integration tests
 
 ### Phase 4: API Integration (Week 3)
 - [ ] Create data source management endpoints
@@ -149,11 +155,37 @@ class DataItem:
 
 ---
 
+## 🧪 Running Tests
+
+### Unit Tests (Fast)
+```bash
+# Run all unit tests
+pytest API/datasources/ -v -k "not integration"
+
+# Run specific component tests
+pytest API/datasources/test_azure_blob.py -v
+pytest API/datasources/test_registry.py -v
+```
+
+### Integration Tests (Requires Azure/Azurite)
+```bash
+# Automatic setup and run (recommended)
+./API/datasources/run_integration_tests.sh --auto-start
+
+# Or manually with Azurite
+docker run -p 10000:10000 mcr.microsoft.com/azure-storage/azurite azurite-blob --blobHost 0.0.0.0
+pytest API/datasources/test_azure_blob_integration.py -v
+```
+
+**See [API/datasources/INTEGRATION_TESTS.md](../../API/datasources/INTEGRATION_TESTS.md) for complete documentation.**
+
+---
+
 ## 🔧 Quick Start Implementation
 
 ### 1. Install Dependencies
 ```bash
-pip install azure-storage-blob psycopg2-binary cryptography
+pip install azure-storage-blob psycopg2-binary cryptography pytest pytest-asyncio
 ```
 
 ### 2. Create Base Structure
