@@ -114,7 +114,7 @@ class DataItem:
 ### Phase 1: Core Infrastructure (Week 1)
 - [x] Create base connector interface
 - [x] Implement credential manager
-- [ ] Create data source registry
+- [x] Create data source registry
 - [ ] Add connection pooling
 - [ ] Write unit tests
 
